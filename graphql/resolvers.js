@@ -11,7 +11,8 @@ module.exports = {
     if (!validator.isEmail(userInput.email)) {
       errors.push({ message: 'E-Mail is invalid.' });
     }
-    if (validator.isEmpty(userInput.password) ||
+    if (
+      validator.isEmpty(userInput.password) ||
       !validator.isLength(userInput.password, { min: 5 })
     ) {
       errors.push({ message: 'Password too short!' });
@@ -36,7 +37,6 @@ module.exports = {
     const createdUser = await user.save();
     return { ...createdUser._doc, _id: createdUser._id.toString() };
   },
-
   login: async function ({ email, password }) {
     const user = await User.findOne({ email: email });
     if (!user) {
@@ -46,17 +46,20 @@ module.exports = {
     }
     const isEqual = await bcrypt.compare(password, user.password);
     if (!isEqual) {
-      const error = new Error('Password is incorrect');
+      const error = new Error('Password is incorrect.');
       error.code = 401;
       throw error;
     }
-    const token = jwt.sign({
-      userId: user._id.toString(),
-      email: user.email
-    }, 'somesupersecretsecret', { expiresIn: '1h' });
+    const token = jwt.sign(
+      {
+        userId: user._id.toString(),
+        email: user.email
+      },
+      'somesupersecretsecret',
+      { expiresIn: '1h' }
+    );
     return { token: token, userId: user._id.toString() };
   },
-
   createPost: async function ({ postInput }, req) {
     if (!req.isAuth) {
       const error = new Error('Not authenticated!');
@@ -96,11 +99,40 @@ module.exports = {
     });
     const createdPost = await post.save();
     user.posts.push(createdPost);
+    await user.save();
     return {
       ...createdPost._doc,
       _id: createdPost._id.toString(),
       createdAt: createdPost.createdAt.toISOString(),
-      updatedAt: updatedAt.updatedAt.toISOString()
+      updatedAt: createdPost.updatedAt.toISOString()
+    };
+  },
+  posts: async function ({ page }, req) {
+    if (!req.isAuth) {
+      const error = new Error('Not authenticated!');
+      error.code = 401;
+      throw error;
+    }
+    if (!page) {
+      page = 1;
+    }
+    const perPage = 2;
+    const totalPosts = await Post.find().countDocuments();
+    const posts = await Post.find()
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * perPage)
+      .limit(perPage)
+      .populate('creator');
+    return {
+      posts: posts.map(p => {
+        return {
+          ...p._doc,
+          _id: p._id.toString(),
+          createdAt: p.createdAt.toISOString(),
+          updatedAt: p.updatedAt.toISOString()
+        };
+      }),
+      totalPosts: totalPosts
     };
   }
 };

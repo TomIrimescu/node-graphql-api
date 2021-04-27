@@ -70,7 +70,7 @@ app.put('/post-image', (req, res, next) => {
   }
   return res
     .status(201)
-    .jaon({
+    .json({
       message: 'File stored.',
       filePath: req.file.path
     });

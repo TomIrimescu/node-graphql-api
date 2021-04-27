@@ -37,6 +37,7 @@ module.exports = {
     const createdUser = await user.save();
     return { ...createdUser._doc, _id: createdUser._id.toString() };
   },
+
   login: async function ({ email, password }) {
     const user = await User.findOne({ email: email });
     if (!user) {
@@ -60,6 +61,7 @@ module.exports = {
     );
     return { token: token, userId: user._id.toString() };
   },
+
   createPost: async function ({ postInput }, req) {
     if (!req.isAuth) {
       const error = new Error('Not authenticated!');
@@ -107,6 +109,7 @@ module.exports = {
       updatedAt: createdPost.updatedAt.toISOString()
     };
   },
+
   posts: async function ({ page }, req) {
     if (!req.isAuth) {
       const error = new Error('Not authenticated!');
@@ -133,6 +136,26 @@ module.exports = {
         };
       }),
       totalPosts: totalPosts
+    };
+  },
+
+  post: async function ({ id }, req) {
+    if (!req.isAuth) {
+      const error = new Error('Not authenticated!');
+      error.code = 401;
+      throw error;
+    }
+    const post = await Post.findById(id).populate('creator');
+    if (!post) {
+      const error = new Error('No post found!');
+      error.code = 404;
+      throw error;
+    }
+    return {
+      ...post._doc,
+      _id: post._id.toString(),
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString()
     };
   }
 };

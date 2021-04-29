@@ -1,5 +1,4 @@
 const path = require('path');
-const fs = require('fs');
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -9,6 +8,7 @@ const { graphqlHTTP } = require('express-graphql');
 const graphqlSchema = require('./graphql/schema');
 const graphqlResolver = require('./graphql/resolvers');
 const auth = require('./middleware/auth');
+const { clearImage } = require('./util/file');
 
 require('dotenv').config();
 const MONGO_URI = process.env.MONGO_URI;
@@ -113,8 +113,3 @@ mongoose.connect(
 app.listen(8080, () => {
   console.log('Server on port 8080');
 });
-
-const clearImage = filePath => {
-  filePath = path.join(__dirname, '..', filePath);
-  fs.unlink(filePath, err => console.log(err));
-};
